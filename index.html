@@ -372,23 +372,28 @@
                     }
                 },
                 send: async ( chan_id, amnt ) => {
+                    //prepare the variables you need to send money
                     var state = hedgehog.state[ chan_id ];
                     var am_sender = true;
                     var am_alice = !!state.alices_priv;
                     var privkey = am_alice ? state.alices_priv : state.bobs_priv;
                     var sender = am_alice ? "alice" : "bob";
-                    var sender_previously_sent = false;
-                    if ( state.channel_states.length ) sender_previously_sent = state.channel_states[ state.channel_states.length - 1 ].from === sender;
+
+                    //get the transaction data
                     var txs = hedgehog.getTxData( chan_id, am_alice, am_sender, amnt, sender );
                     var [ recipients_new_balance, channel_tree, channel_cblock, midstate_tree, midstate_cblock, amnt, conditional_revocation_needed, absolute_revocation_hash, tx1, tx2 ] = txs;
                     if ( txs.length > 10 ) {
                         var conditional_revocation_tx = txs[ 10 ];
                         var prev_tx1 = txs[ 11 ];
                     }
+
+                    //sign everything and, if necessary, prepare to revoke previous states
                     var to_midstate_sig = tapscript.Signer.taproot.sign( privkey, tx1, 0, {extension: channel_tree[ 0 ] }).hex;
                     var finalizer_sig = tapscript.Signer.taproot.sign( privkey, tx2, 0, {extension: midstate_tree[ 0 ] }).hex;
                     if ( conditional_revocation_needed ) var conditional_revocation_sig = tapscript.Signer.taproot.sign( privkey, conditional_revocation_tx, 0, {extension: channel_tree[ 0 ] }).hex;
                     var absolute_revocation_needed = hedgehog.absoluteRevocationNeeded( chan_id, am_sender );
+
+                    //update your state
                     var ch_state = {
                         from: sender,
                         amnt: recipients_new_balance,
@@ -400,6 +405,7 @@
                         conditional_revocation_vout: null,
                     }
                     state.channel_states.push( ch_state );
+
                     //generate the hash you want your counterparty to use when they next send you money
                     var revocation_preimage = hedgehog.getPrivkey();
                     var revocation_hash = await hedgehog.sha256( hedgehog.hexToBytes( revocation_preimage ) );
@@ -416,6 +422,8 @@
                     // console.log( 'tx2:' );
                     // console.log( tx2 );
                     // console.log( tapscript.Tx.util.getTxid( tx2 ) );
+
+                    //send your counterparty the data they need to validate the new state
                     var obj = {
                         to_midstate_sig,
                         finalizer_sig,
@@ -428,6 +436,7 @@
                     return obj;
                 },
                 receive: async data_from_sender => {
+                    //prepare the variables necessary for validating the new state
                     var chan_id = data_from_sender.chan_id;
                     if ( chan_id.startsWith( "a_" ) ) chan_id = "b_" + chan_id.substring( 2 );
                     else chan_id = "a_" + chan_id.substring( 2 );
@@ -436,12 +445,16 @@
                     var am_sender = false;
                     var sender = am_alice ? "bob" : "alice";
                     var amnt = data_from_sender.amnt;
+
+                    //get the transaction data
                     var txs = hedgehog.getTxData( chan_id, am_alice, am_sender, amnt, sender );
                     var [ recipients_new_balance, channel_tree, channel_cblock, midstate_tree, midstate_cblock, amnt, conditional_revocation_needed, absolute_revocation_hash, tx1, tx2 ] = txs;
                     if ( txs.length > 10 ) {
                         var conditional_revocation_tx = txs[ 10 ];
                         var prev_tx1 = txs[ 11 ];
                     }
+
+                    //validate the signatures
                     var to_midstate_sig = data_from_sender.to_midstate_sig;
                     var to_midstate_sighash = tapscript.Signer.taproot.hash( tx1, 0, {extension: channel_tree[ 0 ] }).hex;
                     if ( am_alice ) var senders_pub = state.bobs_pub;
@@ -450,6 +463,8 @@
                     var finalizer_sig = data_from_sender.finalizer_sig;
                     var finalizer_sighash = tapscript.Signer.taproot.hash( tx2, 0, {extension: midstate_tree[ 0 ] }).hex;
                     var finalizer_sig_is_valid = await nobleSecp256k1.schnorr.verify( finalizer_sig, finalizer_sighash, senders_pub );
+
+                    //if necessary, validate the revocation data for prior states
                     if ( conditional_revocation_needed ) {
                         var conditional_revocation_sig = data_from_sender.conditional_revocation_sig;
                         var conditional_revocation_sighash = tapscript.Signer.taproot.hash( conditional_revocation_tx, 0, {extension: channel_tree[ 0 ] }).hex;
@@ -471,9 +486,15 @@
                     // console.log( 'finalizer_sig_is_valid, right?', finalizer_sig_is_valid );
                     if ( !to_midstate_sig_is_valid || !finalizer_sig_is_valid ) return;
                     if ( conditional_revocation_needed && !conditional_revocation_sig_is_valid ) return;
+
+                    //store the revocation data given by your counterparty for future use
                     var revocation_hash = data_from_sender.revocation_hash;
                     if ( am_alice ) state.bobs_revocation_hashes.push( revocation_hash );
                     else state.alices_revocation_hashes.push( revocation_hash );
+                    if ( conditional_revocation_needed ) await hedgehog.conditionallyRevokeChannelStates( chan_id, prev_tx1, conditional_revocation_sig, conditional_revocation_tx.vout );
+                    if ( absolute_revocation_needed ) await hedgehog.fullyRevokeChannelStates( chan_id, absolute_revocation_preimage );
+
+                    //update your state
                     var ch_state = {
                         from: sender,
                         amnt: recipients_new_balance,
@@ -491,8 +512,6 @@
                         // conditional_revocation_sig: null,
                         // conditional_revocation_vout: null,
                     }
-                    if ( conditional_revocation_needed ) await hedgehog.conditionallyRevokeChannelStates( chan_id, prev_tx1, conditional_revocation_sig, conditional_revocation_tx.vout );
-                    if ( absolute_revocation_needed ) await hedgehog.fullyRevokeChannelStates( chan_id, absolute_revocation_preimage );
                     state.channel_states.push( ch_state );
                     return true;
                 },
