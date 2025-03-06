@@ -139,6 +139,7 @@
                     }
 
                     //account for the loss of 480 sats due to anchor outputs
+                    //note that 240 is the dust limit for v3 "anchor outputs"
                     if ( sender_is_alice ) alices_amnt = alices_amnt - 240 - 240;
                     else bobs_amnt = bobs_amnt - 240 - 240;
 
@@ -152,6 +153,7 @@
                             hedgehog.getVout( 240, "51024e73" ),
                         ],
                     });
+                    //note that 330 sats is the dust limit for taproot addresses other than anchor outputs
                     if ( alices_amnt > 330 ) tx.vout.push( hedgehog.getVout( alices_amnt, [ 1, state.alices_pub ] ) );
                     if ( bobs_amnt > 330 ) tx.vout.push( hedgehog.getVout( bobs_amnt, [ 1, state.bobs_pub ] ) );
                     return tx;
