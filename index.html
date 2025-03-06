@@ -7,17 +7,6 @@
         <script src="https://unpkg.com/@cmdcode/tapscript@1.5.3"></script>
         <script src="https://bundle.run/noble-secp256k1@1.2.14"></script>
         <script>
-            /*
-                a hedgehog multisig is a 2 of 2 between Alice and Bob
-                the initial state allows Bob to withdraw everything to an address with this script:
-                [
-                    [ alice, OP_CHECKSIGVERIFY, bob, OP_CHECKSIG ], //conditional revocation
-                    [ alice, OP_CHECKSIGVERIFY, 2026, OP_CHECKSEQUENCEVERIFY ], //Bob disappeared
-                    [ OP_SHA256, bobs_revocation_hash, OP_EQUALVERIFY, alice, OP_CHECKSIG ], //absolute revocation
-                ]
-                the above script allows Alice and Bob to pre-agree on a given state, but Bob can revoke that state
-                if he and Alice agree on a new state; he can, in fact, revoke it in two ways: conditionally, by giving Alice a signature that lets her broadcast the latest state; and absolutely, by giving Alice his revocation preimage
-            */
             var hedgehog = {
                 state: {},
                 keypairs: {},
