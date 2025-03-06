@@ -85,7 +85,7 @@
                         //the first branch allows for both parties to finalize the state
                         //it also allows the recipient to conditionally revoke this state later
                         [ state.alices_pub, "OP_CHECKSIGVERIFY", state.bobs_pub, "OP_CHECKSIG" ],
-                        //the second branch allows the sender to recover the funds if the recipient disappears after initiating a force closure
+                        //the second branch allows the sender to recover the funds if the recipient disappears after initiating a force closure -- this is called a disappearance transaction
                         //TODO: change the 6 to 2026
                         [ senders_pub, "OP_CHECKSIGVERIFY", 6, "OP_CHECKSEQUENCEVERIFY" ],
                         //the third branch allows the recipient to absolutely revoke this state
