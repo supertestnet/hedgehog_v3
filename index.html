@@ -589,7 +589,7 @@
                         });
 
                         //if you could not find a revoked state with that txid, that means your counterparty
-                        //is probably trying to broadcast the latest state, which is good. But if they disappear
+                        //is trying to broadcast the latest state, which is good. But if they disappear
                         //you should be ready to broadcast the disappearance tx, so prepare to do that
                         if ( !revoked_state ) {
                             //prepare a tx that sweeps the funds if your counterparty disappeared
