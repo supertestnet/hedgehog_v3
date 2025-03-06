@@ -306,8 +306,18 @@
                     });
                 },
                 openChannel: async ( bobs_pubkey_and_hash, txdata, data_from_alice ) => {
+                    //alice always opens a channel to bob and pushes all funds to his side
+                    //bob always opens a channel by receiving data from alice and validating it
+                    //consequently the first thing bob must do is change the chan_id to a version
+                    //he can use, distinguished by having the first character be a_ if the channel
+                    //data is stored by alice and b_ if the channel data is stored by bob
+                    //and therefore the first thing we do is detect whether we are alice or bob
+                    //by checking if the object data_from_alice exists -- if so, we must be bob
+                    //so we change the chan_id so that it doesn't start with a_ but b_
                     if ( data_from_alice ) var chan_id = "b_" + data_from_alice.chan_id.substring( 2 );
                     else var chan_id = "a_" + hedgehog.getPrivkey().substring( 0, 32 );
+
+                    //initialize the channel state
                     hedgehog.state[ chan_id ] = {
                         alices_priv: null,
                         bobs_priv: null,
@@ -322,13 +332,23 @@
                         htlcs: [],
                     }
                     var state = hedgehog.state[ chan_id ];
+
+                    //if we are alice, the array bobs_pubkey_and_hash will exist, because alice
+                    //needs that info in order to open a channel to bob
                     if ( bobs_pubkey_and_hash ) {
+                        //prepare alice's privkey and pubkey
                         state.alices_priv = hedgehog.getPrivkey();
                         state.alices_pub = hedgehog.getPubkey( state.alices_priv );
+
+                        //store bob's pubkey and hash
                         state.bobs_pub = bobs_pubkey_and_hash[ 0 ];
                         state.bobs_revocation_hashes.push( bobs_pubkey_and_hash[ 1 ] );
+
+                        //prepare the channel address
                         var channel_scripts = hedgehog.getChannelScripts( chan_id );
                         var channel = hedgehog.getAddressData( channel_scripts, 0 )[ 0 ];
+
+                        //fund the channel
                         console.log( 'send money to this address:' );
                         console.log( channel );
                         if ( txdata ) var [ txid, vout, amnt ] = txdata;
@@ -338,21 +358,32 @@
                             var amnt = Number( prompt( `and the amount` ) );
                         }
                         state.funding_txinfo = [ txid, vout, amnt ];
+
+                        //send bob the data he needs to validate this channel
                         var data_for_bob = await hedgehog.send( chan_id, amnt );
                         data_for_bob[ "funding_txinfo" ] = state.funding_txinfo;
                         data_for_bob[ "alices_pub" ] = state.alices_pub;
                         data_for_bob[ "bobs_pub" ] = state.bobs_pub;
                         return data_for_bob;
                     }
+
+                    //if we are bob, the data_from_alice object will exist
                     if ( data_from_alice ) {
+                        //bob's private key was generated previously and stored in an object called keypairs
+                        //so we get the private key and Bob's preimage from there and store them in state,
+                        //ready for future use
                         var my_pub = data_from_alice.bobs_pub;
                         state.bobs_priv = hedgehog.keypairs[ my_pub ][ "privkey" ];
                         state.bobs_pub = my_pub;
                         state.bobs_revocation_preimages.push( hedgehog.keypairs[ my_pub ][ "preimage" ] );
                         var hash = await hedgehog.sha256( hedgehog.hexToBytes( state.bobs_revocation_preimages[ 0 ] ) );
                         state.bobs_revocation_hashes.push( hash );
+
+                        //we also store alice's pubkey and the funding info
                         state.alices_pub = data_from_alice.alices_pub;
                         state.funding_txinfo = data_from_alice.funding_txinfo;
+
+                        //validate the channel opening data
                         var initial_state_is_valid = await hedgehog.receive( data_from_alice );
                         return initial_state_is_valid;
                     }
