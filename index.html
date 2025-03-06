@@ -735,6 +735,7 @@
                     var [ channel, channel_tree, channel_cblock ] = hedgehog.getAddressData( channel_scripts, 0 );
                     var total_in_channel = hedgehog.getBalances( chan_id ).reduce( ( accumulator, currentValue ) => accumulator + currentValue, 0 );
                     var tx1 = tapscript.Tx.decode( m_r_s.tx1 );
+                    //in order to save space in the database, I don't store the prevout of tx1, so here I add it back in
                     tx1.vin[ 0 ].prevout = {
                         value: total_in_channel,
                         scriptPubKey: tapscript.Address.toScriptPubKey( channel ),
