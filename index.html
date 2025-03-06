@@ -344,9 +344,6 @@
                         data_for_bob[ "bobs_pub" ] = state.bobs_pub;
                         return data_for_bob;
                     }
-                    //use like this:
-                    //var data_for_bob = await hedgehog.openChannel( ["d9cf5e4fd5409048f377ae6ba4cb7972faa85e62282de670022f0023dd93155f","e6f6f3fb19a582150e43ddbb36730796d027d9fefb39aeecbe7bf18090650a55"] );
-                    //console.log( JSON.stringify( data_for_bob ) );
                     if ( data_from_alice ) {
                         var my_pub = data_from_alice.bobs_pub;
                         state.bobs_priv = hedgehog.keypairs[ my_pub ][ "privkey" ];
