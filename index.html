@@ -273,6 +273,8 @@
                     if ( !am_alice && !am_sender ) var sender = "bob";
 
                     //return the most recent state where the recipient received money, if any
+                    //I parse a strinigified version of the object to create a deep clone
+                    //so that the original is unmodified by my reversing of it
                     var reversed = JSON.parse( JSON.stringify( state.channel_states ) );
                     reversed = reversed.reverse();
                     reversed.every( ( item, index ) => {
