@@ -655,7 +655,7 @@
                             return { justice_tx }
                         }
 
-                        //otherwise, prepare a transaction updating the state to the latest state
+                        //if you have a revoked transaction that was *not* absolutely revoked but only conditionally revoked, prepare a transaction updating the state to the latest state
                         var alt_tx2 = tapscript.Tx.create({
                             version: 3,
                             vin: [{
