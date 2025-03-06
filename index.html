@@ -664,6 +664,7 @@
                             console.log( 'send 500 sats into this address:' );
                             console.log( addy );
                             var txid2 = prompt( `send 500 sats into the address in your console and enter the txid` );
+                            if ( !txid2 ) return;
                             var vout2 = Number( prompt( `and the vout` ) );
                             var amnt2 = Number( prompt( `and the amount` ) );
                         } else {
@@ -746,6 +747,7 @@
                         console.log( 'send 1000 sats into this address:' );
                         console.log( addy );
                         var txid2 = prompt( `send 1000 sats into the address in your console and enter the txid` );
+                        if ( !txid2 ) return;
                         var vout2 = Number( prompt( `and the vout` ) );
                         var amnt2 = Number( prompt( `and the amount` ) );
                     } else {
@@ -933,6 +935,7 @@
                     //money; if they broadcasted a state that they *conditionally* revoked, it will return a
                     //transaction that updates the state to the latest one
                     var txid = null;
+                    if ( test_on_regtest ) alert( `we are about to test a force closure by bob, so you will be prompted to send additional money in so that he may cover the fees associated with his force closure` );
                     var force_closure_txs = await hedgehog.forceClose( b_chan_id, txid, txdata2, show_logs );
                     var { tx1, tx2 } = force_closure_txs;
                     console.log( `alice got the amount she should, right?`, tx2.vout[ 1 ][ "value" ] === hedgehog.getBalances( a_chan_id )[ 0 ] );
@@ -951,9 +954,11 @@
                     var a_chan_id = data_for_bob.chan_id;
                     var b_chan_id = "b_" + data_for_bob.chan_id.substring( 2 );
                     var txid = null;
+                    if ( test_on_regtest ) alert( `we are about to test a force closure by alice in a situation where she does not have the latest state. Consequently, you will be prompted to send additional money in so that she may cover the fees associated with her force closure` );
                     var alices_force_closure_txs = await hedgehog.forceClose( a_chan_id, txid, txdata2, show_logs );
                     var { tx1 } = alices_force_closure_txs;
                     var tx1_txid = tapscript.Tx.util.getTxid( tx1 );
+                    if ( test_on_regtest ) alert( `since Alice did not have the latest state, she broadcasted the previous state, and bob will have to finalize it in the latest state so that he does not lose any money; consequently, bob will need to broadcast a transaction, and therefore you will be prompted *again* to send in *even more* additional money in so that he may cover the fees required to finalize the state` );
                     var bobs_force_closure_txs = await hedgehog.forceClose( b_chan_id, tx1_txid, txdata2, show_logs );
                     var { alt_tx2: tx2 } = bobs_force_closure_txs;
                     console.log( `alice got the amount she should, right?`, tx2.vout[ 1 ][ "value" ] === hedgehog.getBalances( a_chan_id )[ 0 ], tx2.vout[ 1 ][ "value" ], hedgehog.getBalances( a_chan_id )[ 0 ] );
