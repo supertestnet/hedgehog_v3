@@ -419,6 +419,7 @@
                     //get the transaction data
                     var txs = hedgehog.getTxData( chan_id, am_alice, am_sender, amnt, sender );
                     var [ recipients_new_balance, channel_tree, channel_cblock, midstate_tree, midstate_cblock, amnt, conditional_revocation_needed, absolute_revocation_hash, tx1, tx2 ] = txs;
+                    //getTxData always returns 10 items. It also returns two additional items if a conditional revocation was needed on a prior state, so in that cirucmstance we also grab those two additional items so that we can sign them
                     if ( txs.length > 10 ) {
                         var conditional_revocation_tx = txs[ 10 ];
                         var prev_tx1 = txs[ 11 ];
@@ -486,6 +487,7 @@
                     //get the transaction data
                     var txs = hedgehog.getTxData( chan_id, am_alice, am_sender, amnt, sender );
                     var [ recipients_new_balance, channel_tree, channel_cblock, midstate_tree, midstate_cblock, amnt, conditional_revocation_needed, absolute_revocation_hash, tx1, tx2 ] = txs;
+                    //getTxData always returns 10 items. It also returns two additional items if a conditional revocation was needed on a prior state, so in that cirucmstance we also grab those two additional items so that we can validate the signatures involving them
                     if ( txs.length > 10 ) {
                         var conditional_revocation_tx = txs[ 10 ];
                         var prev_tx1 = txs[ 11 ];
