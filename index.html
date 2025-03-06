@@ -289,6 +289,17 @@
                 absoluteRevocationNeeded: ( chan_id, am_sender ) => {
                     var state = hedgehog.state[ chan_id ];
                     var am_alice = !!state.alices_priv;
+                    //this function is used twice: when sending and when receiving i.e. validating
+                    //when sending, you revoke the state two transactions ago, because the most *recent*
+                    //state is one you're *allowed to* broadcast per the hedgehog protocol, and the
+                    //*current* state is also allowed. But you're not allowed to broadcast and states
+                    //before then. So, every time you make a new transaction, you get the revocation preimage
+                    //from two transactions ago and reveal it to your recipient so that you can no longer
+                    //broadcast that old state.
+                    //As the recipient, you check the validity of the revocation preimage by grabing your
+                    //counterparty's revocation hash from two transactions ago and ensuring that the
+                    //preimage they revealed to you hashes to that hash. Which is why this function
+                    //returns the revoation hash from two transactions ago if you are the recipient.
                     if ( am_alice && am_sender ) return state.alices_revocation_preimages[ state.alices_revocation_preimages.length - 2 ];
                     if ( !am_alice && am_sender ) return state.bobs_revocation_preimages[ state.bobs_revocation_preimages.length - 2 ];
                     if ( am_alice && !am_sender ) return state.bobs_revocation_hashes[ state.bobs_revocation_hashes.length - 2 ];
